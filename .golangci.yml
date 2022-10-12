@@ -27,7 +27,7 @@ linters-settings:
   goconst:
     min-occurrences: 2
   gocyclo:
-    min-complexity: 7
+    min-complexity: 12
   misspell:
     locale: US
   nakedret:
@@ -58,7 +58,7 @@ linters:
     - gosec
     - govet
     - ineffassign
-    - lll
+    # - lll
     - megacheck
     - maligned
     - misspell

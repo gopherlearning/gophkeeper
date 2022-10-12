@@ -7,16 +7,24 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+    main: ./cmd/main.go
     dir: .
+    binary: gophkeeper
     goos:
       - linux
       - darwin
       - windows
-      - freebsd
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/gopherlearning/gophkeeper/internal/conf.buildCommit={{.Env.Commit}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildVersion={{.Env.Version}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildDate={{.Env.Date}}
+      - ./usemsan=-msan
 archives:
   - files:
-      - README.md
       - LICENSE
+    format_overrides:
+      - goos: windows
+        format: zip
     replacements:
       darwin: Darwin
       linux: Linux
