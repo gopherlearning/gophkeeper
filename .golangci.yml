@@ -35,7 +35,9 @@ linters-settings:
   unparam:
     algo: cha
     check-exported: false
-
+  govet:
+    enable-all: true
+    check-shadowing: true
 linters:
   enable:
     - asciicheck
@@ -53,21 +55,23 @@ linters:
     - godox
     - gofmt
     - goimports
-    - golint
+    - revive
     - gosimple
     - gosec
     - govet
+    # - govet:fieldalignment
     - ineffassign
     # - lll
     - megacheck
-    - maligned
+    # - maligned
     - misspell
     - nakedret
     - nestif
     - prealloc
-    - scopelint
-    - staticcheck
-    - structcheck
+    - exportloopref
+    # - scopelint
+    # - staticcheck
+    # - structcheck
     - stylecheck
     - unconvert
     - unparam

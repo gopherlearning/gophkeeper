@@ -7,6 +7,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	kongyaml "github.com/alecthomas/kong-yaml"
+	"github.com/gopherlearning/gophkeeper/internal"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -48,7 +49,7 @@ func Run(name, desc string, cfg cmdContext) {
 		}
 	}
 
-	err = ctx.Run(&Context{Verbose: cfg.Debug()})
+	err = ctx.Run(&internal.Context{Verbose: cfg.Debug()})
 
 	ctx.FatalIfErrorf(err)
 }
