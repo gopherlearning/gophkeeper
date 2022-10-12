@@ -1,9 +1,9 @@
 @startuml usecase
 left to right direction
 actor Пользователь as u
-usecase UC1  as "получает информацию 
+usecase UC1 #palegreen;line:green as "получает информацию 
 о версии и дате сборки бинарного 
-файла клиента"
+файла клиента" 
 usecase UC2  as "проходит процедуру 
 первичной регистрации"
 usecase UC3  as "добавляет в клиент 
