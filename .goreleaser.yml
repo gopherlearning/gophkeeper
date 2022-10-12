@@ -7,16 +7,23 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+    main: ./cmd/main.go
     dir: .
+    binary: gophkeeper
     goos:
       - linux
       - darwin
       - windows
-      - freebsd
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/gopherlearning/gophkeeper/internal/conf.buildCommit={{.Commit}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildVersion={{.Version}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildDate={{.CommitDate}}
 archives:
   - files:
-      - README.md
       - LICENSE
+    format_overrides:
+      - goos: windows
+        format: zip
     replacements:
       darwin: Darwin
       linux: Linux
@@ -32,4 +39,6 @@ changelog:
   filters:
     exclude:
       - '^docs:'
+      - '^doc:'
       - '^test:'
+      - '^.vscode:'
