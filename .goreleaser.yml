@@ -17,7 +17,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w -X github.com/gopherlearning/gophkeeper/internal/conf.buildCommit={{.Env.Commit}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildVersion={{.Env.Version}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildDate={{.Env.Date}}
+      - -s -w -X github.com/gopherlearning/gophkeeper/internal/conf.buildCommit={{.Commit}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildVersion={{.Version}} -X github.com/gopherlearning/gophkeeper/internal/conf.buildDate={{.CommitDate}}
       - ./usemsan=-msan
 archives:
   - files:
@@ -41,3 +41,5 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+gomod:
+  gobinary: go1.19
