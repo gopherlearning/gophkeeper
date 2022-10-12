@@ -13,21 +13,21 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
-      - uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        with:
-          tag_name: v0.1.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        with:
-          tag_name: v0.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        with:
-          tag_name: v0.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: dev-drprasad/delete-tag-and-release@v0.2.0
+      #   with:
+      #     tag_name: v0.1.0
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: dev-drprasad/delete-tag-and-release@v0.2.0
+      #   with:
+      #     tag_name: v0.0.1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - uses: dev-drprasad/delete-tag-and-release@v0.2.0
+      #   with:
+      #     tag_name: v0.0.2
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run linters

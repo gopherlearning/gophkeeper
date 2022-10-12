@@ -1,0 +1,58 @@
+@startuml usecase
+left to right direction
+actor Пользователь as u
+usecase UC1  as "получает информацию 
+о версии и дате сборки бинарного 
+файла клиента"
+usecase UC2  as "проходит процедуру 
+первичной регистрации"
+usecase UC3  as "добавляет в клиент 
+пары логин/пароль"
+usecase UC4  as "добавляет в клиент 
+произвольные текстовые 
+данные"
+usecase UC5  as "добавляет в клиент 
+произвольные бинарные 
+данные"
+usecase UC6  as "добавляет в клиент 
+данные банковских 
+карт"
+usecase UC7  as "добавляет в 
+клиент данные OTP 
+(one time password)"
+usecase UC8  as "добавляет к 
+данным лейблы"
+usecase UC9  as "добавляет к 
+данным теги"
+usecase UC10 as "синхронизирует 
+данные с сервером"
+usecase UC11 as "проходит 
+процедуру аутентификации"
+usecase UC12 as "запрашивает 
+данные"
+usecase UC13 as "копирует 
+пароль"
+usecase UC14 as "извлекает 
+данные в файл"
+usecase UC15 as "отображает 
+список сессий"
+usecase UC16 as "удаляет 
+авторизованную 
+сессию"
+u -right-> UC1
+u -right-> UC2
+u -down-> UC3
+u -down-> UC4
+u -down-> UC5
+u -down-> UC6
+u -down-> UC7
+u -down-> UC8
+u -down-> UC9
+u -up-> UC10
+u -right-> UC11
+u -up-> UC12
+u -up-> UC13
+u -up-> UC14
+u -left-> UC15
+u -left-> UC16
+@enduml
