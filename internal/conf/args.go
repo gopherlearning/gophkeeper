@@ -8,7 +8,6 @@ import (
 type Args struct {
 	Version   VersionCmd          `cmd:"" help:"Показать информацию о версии"`
 	Server    server.Cmd          `cmd:"" help:"API сервер для менеджера паролей GophKeeper"`
-	Register  client.RegisterCmd  `cmd:"" help:"Указать адрес API сервера, задать пароль и сгенерировать мнемоническую фразу (пароль защищает локальную версию хранилища)"`
 	Authorize client.AuthorizeCmd `cmd:"" help:"Авторизоваться с помощью адреса сервера и мнемонической фразы и задать пароль для защиты локальной версии хранилища"`
 	Verbose   bool                `name:"verbose" short:"v" help:"Включить расширенное логирование"`
 	// Client    client.Cmd          `cmd:"" help:"клиентская часть менеджера паролей GophKeeper" default:"withargs"`
