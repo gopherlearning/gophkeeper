@@ -4,12 +4,15 @@ run:
   skip-dirs:
     - wordlists
 
-# issues:
-#   exclude-rules:
-#     - path: bip39_test\.go
-#       text: "Function 'testVectors' is too long"
-#       linters:
-#         - funlen
+issues:
+  exclude-rules:
+    - path: cmd/server/main.go
+      linters:
+      - wsl
+      - errcheck
+      - ineffassign
+      - staticcheck
+      # source: cmd/server/main.go
 #     - path: (languages|bip39_test|example_test)\.go
 #       linters:
 #         - lll
@@ -41,7 +44,7 @@ linters-settings:
 linters:
   enable:
     - asciicheck
-    - deadcode
+    # - deadcode
     - depguard
     - dogsled
     - dupl
@@ -76,6 +79,6 @@ linters:
     - unconvert
     - unparam
     - unused
-    - varcheck
+    # - unused
     - whitespace
     - wsl
