@@ -2,12 +2,14 @@ package client
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/cosmos/go-bip39"
 	"github.com/eiannone/keyboard"
 	"github.com/gopherlearning/gophkeeper/internal"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -16,6 +18,10 @@ var (
 
 type AuthorizeCmd struct {
 	SeverURL string `name:"url" help:"Адрес API сервера"`
+}
+type AuthorizeState struct {
+	words string
+	ready bool
 }
 
 func (l *AuthorizeCmd) Run(ctx *internal.Context) error {
@@ -46,8 +52,19 @@ func (l *AuthorizeCmd) Run(ctx *internal.Context) error {
 
 			return nil
 		case 'n', 'N', 'т', 'Т':
-			fmt.Println(" - n\nЗапустить генерацию")
-			return nil
+			mnemonic, err := generateMnemonic()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("\nСохраните данную фразу в надёжном месте:\n%s\n", mnemonic)
+
+			path, err := os.UserConfigDir()
+			if err != nil {
+				return err
+			}
+
+			return initStorage(mnemonic, path)
 		case 'e', 'E', 'q', 'Q', 'й', 'Й', 'у', 'У':
 			fmt.Println()
 			return nil
@@ -78,7 +95,7 @@ func (s *AuthorizeState) executor(in string) {
 			}
 		}
 
-		fmt.Println(in, "\nВсё правильно?")
+		fmt.Println("Всё верно??")
 
 		s.ready = true
 	}
@@ -91,32 +108,24 @@ func (s *AuthorizeState) executor(in string) {
 	}
 
 	if strings.TrimSpace(in) == "y" {
-		s.confirm = true
+		path, err := os.UserConfigDir()
+		if err != nil {
+			RestoreTermState()
+			log.Err(err)
+			os.Exit(1)
+		}
+
+		err = initStorage(s.words, path)
+		if err != nil {
+			log.Err(err)
+		}
+
+		RestoreTermState()
+		os.Exit(0)
 	}
-
-	return
-	// if s.ready {
-	// 	fmt.Println(in, "\nВсё правильно?")
-	// }
-
-	// if s.confirm {
-	// 	if len(s.password) < 8 {
-	// 		fmt.Println(in, "\nВведите пароль для локального хранилища (минимум 8 символов):")
-	// 	}
-	// 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	defer term.Restore(int(os.Stdin.Fd()), oldState)
-	// 	s.password = in
-	// }
 }
 
 func (s *AuthorizeState) completer(in prompt.Document) []prompt.Suggest {
-	if s.confirm {
-		return []prompt.Suggest{}
-	}
-
 	if s.ready {
 		return []prompt.Suggest{
 			{Text: "y", Description: "Применить введённую фразу"},
@@ -155,13 +164,6 @@ func generateMnemonic() (mnemonic string, err error) {
 	}
 
 	return mnemonic, nil
-}
-
-type AuthorizeState struct {
-	words    string
-	password string
-	ready    bool
-	confirm  bool
 }
 
 func (s *AuthorizeState) Words() []prompt.Suggest {

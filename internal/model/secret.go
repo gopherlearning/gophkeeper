@@ -19,7 +19,7 @@ type Decryptor interface {
 	Decrypt([]byte) ([]byte, error)
 }
 type Encryptor interface {
-	Encrypt([]byte) ([]byte, error)
+	Encrypt(plaindata []byte, recipient ...string) ([]byte, error)
 }
 
 type Secret struct {
@@ -36,6 +36,19 @@ type aliasSecret struct {
 	// e Encryptor
 }
 
+// String возвращает расшифрованное текстовое представление сожердимого секрета,
+/*
+---
+password: dededededede
+la:
+  la: 1
+plaintext
+---
+name: supersecret
+labels:
+  readers: [fefefefefe, tgtgtgtg]
+  editors: [eeddddeee]
+*/
 func (s *Secret) String(d Decryptor) string {
 	out := &bytes.Buffer{}
 	_ = secretTemplate.Execute(out, aliasSecret{S: s, d: d})
@@ -43,6 +56,7 @@ func (s *Secret) String(d Decryptor) string {
 	return out.String()
 }
 
+// Text возвращает расшифрованное сожердимое переменной s.Data.
 func (s *Secret) Text(d Decryptor) string {
 	if s.Type != TextType {
 		return fmt.Errorf("это не текстовые данные. Тип - %s", s.Type).Error()

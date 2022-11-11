@@ -72,3 +72,24 @@ GophKeeper представляет собой клиент-серверную �
 ## Схемы
 ### Пользовательские сценарии
 ![](./doc/usecase.svg)
+
+
+### Схема хранения
+1. Права:
+  * owner   - watch, edit, delete
+  * editor  - watch, edit
+  * reader  - watch
+
+data:uuid_1 = model.Secret
+data:uuid_2 = model.Secret
+data:uuid_3 = model.Secret
+
+owner:pubKey_1:uuid_1
+owner:pubKey_1:uuid_2
+owner:pubKey_2:uuid_3
+
+editor:pubkey_2:uuid_1
+
+reader:pubkey_3:uuid_3
+
+

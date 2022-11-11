@@ -137,6 +137,6 @@ func (f *FakeDecryptorEncryptor) Decrypt(b []byte) ([]byte, error) {
 	return f.error(b)
 }
 
-func (f *FakeDecryptorEncryptor) Encrypt(b []byte) ([]byte, error) {
+func (f *FakeDecryptorEncryptor) Encrypt(b []byte, recipient ...string) ([]byte, error) {
 	return f.error(b)
 }
