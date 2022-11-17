@@ -15,24 +15,19 @@ name: {{.S.Name}}
 owner: {{.S.Owner}}
 `))
 
-type Decryptor interface {
-	Decrypt([]byte) ([]byte, error)
-}
-type Encryptor interface {
-	Encrypt(plaindata []byte, recipient ...string) ([]byte, error)
-}
-
+// Secret является минимальной единицей хранения, должен содержать Owner, Name
+// может содержать Labels.
 type Secret struct {
 	Name   string
 	Owner  string
 	Labels map[string]string
-	Data   []byte
+	data   []byte
 	Type   SecretType
 }
 
 type aliasSecret struct {
 	S *Secret
-	d Decryptor
+	// d Decryptor
 	// e Encryptor
 }
 
@@ -49,47 +44,30 @@ labels:
   readers: [fefefefefe, tgtgtgtg]
   editors: [eeddddeee]
 */
-func (s *Secret) String(d Decryptor) string {
+func (s *Secret) String() string {
 	out := &bytes.Buffer{}
-	_ = secretTemplate.Execute(out, aliasSecret{S: s, d: d})
+	_ = secretTemplate.Execute(out, aliasSecret{S: s})
 
 	return out.String()
 }
 
 // Text возвращает расшифрованное сожердимое переменной s.Data.
-func (s *Secret) Text(d Decryptor) string {
+func (s *Secret) Text() string {
 	if s.Type != TextType {
 		return fmt.Errorf("это не текстовые данные. Тип - %s", s.Type).Error()
 	}
 
-	r, err := d.Decrypt(s.Data)
-	if err != nil {
-		return fmt.Errorf("не удалось расшифровать данные: %v", err).Error()
-	}
-
-	return string(r)
+	return string(s.data)
 }
 
-func (s *Secret) Bytes(d Decryptor) ([]byte, error) {
-	r, err := d.Decrypt(s.Data)
-	if err != nil {
-		return nil, fmt.Errorf("не удалось расшифровать данные: %v", err)
-	}
-
-	return r, nil
+func (s *Secret) Bytes() []byte {
+	return s.data
 }
 
-func (s *Secret) Set(e Encryptor, data []byte) error {
-	r, err := e.Encrypt(s.Data)
-	if err != nil {
-		return fmt.Errorf("не удалось зашифровать данные: %v", err)
-	}
-
-	s.Data = r
-
-	return nil
+func (s *Secret) Set(data []byte) {
+	s.data = data
 }
 
 func (a aliasSecret) Text() string {
-	return a.S.Text(a.d)
+	return a.S.Text()
 }

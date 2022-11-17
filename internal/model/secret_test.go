@@ -1,18 +1,17 @@
 package model
 
 import (
-	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 var testsTestSecretRead = []struct {
-	secret  *Secret
-	cryptor *FakeDecryptorEncryptor
-	name    string
-	text    string
-	result  string
+	secret *Secret
+	name   string
+	text   string
+	result string
 }{
 	{
 		name: "success text",
@@ -30,9 +29,8 @@ owner: testovich
 			Owner:  "testovich",
 			Labels: map[string]string{"bla": "bla"},
 			Type:   TextType,
-			Data:   []byte("hello"),
+			data:   []byte("hello"),
 		},
-		cryptor: &FakeDecryptorEncryptor{},
 	},
 	{
 		name: "success text without labels",
@@ -47,9 +45,8 @@ owner: testovich
 			Name:  "success-text",
 			Owner: "testovich",
 			Type:  TextType,
-			Data:  []byte("hello"),
+			data:  []byte("hello"),
 		},
-		cryptor: &FakeDecryptorEncryptor{},
 	},
 	{
 		name:   "success binary",
@@ -59,64 +56,54 @@ owner: testovich
 			Name:  "success-text",
 			Owner: "testovich",
 			Type:  BinaryType,
-			Data:  []byte("hello"),
+			data:  []byte("hello"),
 		},
-		cryptor: &FakeDecryptorEncryptor{},
-	},
-	{
-		name:    "decryptor error",
-		text:    "не удалось расшифровать данные: fake error",
-		result:  "---\nне удалось расшифровать данные: fake error\n---\nname: \nowner: \n",
-		secret:  &Secret{},
-		cryptor: &FakeDecryptorEncryptor{Err: errors.New("fake error")},
 	},
 }
 
 func TestSecretRead(t *testing.T) {
 	for _, v := range testsTestSecretRead {
 		t.Run(v.name, func(t *testing.T) {
-			assert.Equal(t, v.secret.Text(v.cryptor), v.text)
-			assert.Equal(t, v.secret.String(v.cryptor), v.result)
-			b, err := v.secret.Bytes(v.cryptor)
-			if v.cryptor.Err != nil {
-				assert.ErrorContains(t, err, v.cryptor.Err.Error())
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, b, v.secret.Data)
+			assert.Equal(t, v.secret.Text(), v.text)
+			assert.Equal(t, v.secret.String(), v.result)
+			b := v.secret.Bytes()
+			assert.NotEmpty(t, b)
+			assert.Equal(t, b, v.secret.data)
 		})
 	}
 }
 
 func TestSecretSet(t *testing.T) {
 	var testsTestSecretRead = []struct {
-		secret  *Secret
-		cryptor *FakeDecryptorEncryptor
-		name    string
-		bytes   []byte
+		secret *Secret
+		// cryptor *FakeDecryptorEncryptor
+		name  string
+		bytes []byte
 	}{
 		{
-			name:    "success",
-			secret:  &Secret{},
-			cryptor: &FakeDecryptorEncryptor{},
-			bytes:   []byte("success"),
+			name:   "success",
+			secret: &Secret{},
+			// cryptor: &FakeDecryptorEncryptor{},
+			bytes: []byte("success"),
 		},
 		{
-			name:    "error",
-			secret:  &Secret{},
-			cryptor: &FakeDecryptorEncryptor{Err: errors.New("fake error")},
-			bytes:   nil,
+			name:   "error",
+			secret: &Secret{},
+			// cryptor: &FakeDecryptorEncryptor{Err: errors.New("fake error")},
+			bytes: nil,
 		},
 	}
 
 	for _, v := range testsTestSecretRead {
 		t.Run(v.name, func(t *testing.T) {
-			err := v.secret.Set(v.cryptor, v.bytes)
-			if v.cryptor.Err != nil {
-				assert.ErrorContains(t, err, v.cryptor.Err.Error())
-				return
+			fmt.Println(v.secret.Name)
+			assert.Empty(t, v.secret.Bytes())
+			v.secret.Set(v.bytes)
+			if len(v.bytes) != 0 {
+				assert.NotEmpty(t, v.secret.Bytes())
+			} else {
+				assert.Empty(t, v.secret.Bytes())
 			}
-			assert.NoError(t, err)
 		})
 	}
 }
