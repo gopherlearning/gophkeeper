@@ -15,3 +15,5 @@ dist
 vendor/
 *.drawio.bkp
 *.drawio.dtmp
+___kube
+profile.cov

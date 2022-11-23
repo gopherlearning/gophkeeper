@@ -4,12 +4,15 @@ run:
   skip-dirs:
     - wordlists
 
-# issues:
-#   exclude-rules:
-#     - path: bip39_test\.go
-#       text: "Function 'testVectors' is too long"
-#       linters:
-#         - funlen
+issues:
+  exclude-rules:
+    - path: cmd/server/main.go
+      linters:
+      - wsl
+      - errcheck
+      - ineffassign
+      - staticcheck
+      # source: cmd/server/main.go
 #     - path: (languages|bip39_test|example_test)\.go
 #       linters:
 #         - lll
@@ -20,7 +23,7 @@ run:
 
 linters-settings:
   dupl:
-    threshold: 20
+    threshold: 200
   errcheck:
     check-type-assertions: false
     check-blank: false
@@ -28,8 +31,8 @@ linters-settings:
     min-occurrences: 2
   gocyclo:
     min-complexity: 12
-  misspell:
-    locale: US
+  # misspell:
+  #   locale: US
   nakedret:
     max-func-lines: 0
   unparam:
@@ -41,7 +44,7 @@ linters-settings:
 linters:
   enable:
     - asciicheck
-    - deadcode
+    # - deadcode
     - depguard
     - dogsled
     - dupl
@@ -59,23 +62,16 @@ linters:
     - gosimple
     - gosec
     - govet
-    # - govet:fieldalignment
     - ineffassign
-    # - lll
     - megacheck
-    # - maligned
-    - misspell
+    # - misspell
     - nakedret
     - nestif
     - prealloc
     - exportloopref
-    # - scopelint
-    # - staticcheck
-    # - structcheck
     - stylecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
     - wsl

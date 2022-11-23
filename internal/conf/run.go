@@ -36,6 +36,7 @@ func Run(name, desc string, cfg cmdContext) {
 
 	ctx, err := parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	if cfg.Debug() {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)

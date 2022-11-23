@@ -1,0 +1,3 @@
+server:
+  storage.path: bla
+  listen: :8080
