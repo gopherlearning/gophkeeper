@@ -13,7 +13,13 @@ labels:{{range $index, $element := .S.Labels}}
   {{$index}}: {{$element}}{{end}}{{end}}
 name: {{.S.Name}}
 owner: {{.S.Owner}}
+type: {{.S.Type}}
 `))
+
+const CadrTemplate = `number: 
+expire_date: /
+cvv: 
+`
 
 // Secret является минимальной единицей хранения, должен содержать Owner, Name
 // может содержать Labels.
@@ -21,7 +27,7 @@ type Secret struct {
 	Name   string
 	Owner  string
 	Labels map[string]string
-	data   []byte
+	Data   []byte
 	Type   SecretType
 }
 
@@ -53,21 +59,22 @@ func (s *Secret) String() string {
 
 // Text возвращает расшифрованное сожердимое переменной s.Data.
 func (s *Secret) Text() string {
-	if s.Type != TextType {
+	if s.Type == BinaryType {
 		return fmt.Errorf("это не текстовые данные. Тип - %s", s.Type).Error()
 	}
 
-	return string(s.data)
+	return string(s.Data)
 }
 
 func (s *Secret) Bytes() []byte {
-	return s.data
+	return s.Data
 }
 
 func (s *Secret) Set(data []byte) {
-	s.data = data
+	s.Data = data
 }
 
 func (a aliasSecret) Text() string {
 	return a.S.Text()
 }
+

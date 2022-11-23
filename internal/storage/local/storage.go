@@ -3,15 +3,13 @@ package local
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gopherlearning/gophkeeper/internal/model"
-	"github.com/gopherlearning/gophkeeper/pkg/cryptor"
 )
 
 var (
@@ -21,27 +19,9 @@ var (
 type Storage struct {
 	cancelFunc context.CancelFunc
 	db         *badger.DB
-	c          Cryptor
 }
 
-type Cryptor interface {
-	Decrypt(chipher []byte) ([]byte, error)
-	Encrypt(plaindata []byte, recipient ...string) ([]byte, error)
-	GetKey() []byte
-}
-
-func NewLocalStorage(secret, path string, cryp Cryptor) (*Storage, error) {
-	var key []byte
-
-	_, err := os.Stat(path)
-	if err != nil {
-		if cryp == nil {
-			return nil, ErrNilCryptor
-		}
-
-		key = cryp.GetKey()
-	}
-
+func NewLocalStorage(secret, path string) (*Storage, error) {
 	db, err := badger.Open(badger.DefaultOptions(path).
 		WithEncryptionKey([]byte(secret)).
 		WithIndexCacheSize(20 * 1024 * 1024).
@@ -57,36 +37,7 @@ func NewLocalStorage(secret, path string, cryp Cryptor) (*Storage, error) {
 		db.Close()
 	}()
 
-	if len(key) != 0 {
-		err = db.Update(func(txn *badger.Txn) error {
-			return txn.Set([]byte(secret), key)
-		})
-	}
-
-	if cryp == nil {
-		err = db.View(func(txn *badger.Txn) error {
-			var r *badger.Item
-			r, err = txn.Get([]byte(secret))
-			if err != nil {
-				return err
-			}
-			return r.Value(func(val []byte) error {
-				cryp, err = cryptor.NewCryptor(val)
-				if err != nil {
-					return err
-				}
-
-				return nil
-			})
-		})
-
-		if err != nil {
-			cancel()
-			return nil, err
-		}
-	}
-
-	return &Storage{db: db, cancelFunc: cancel, c: cryp}, nil
+	return &Storage{db: db, cancelFunc: cancel}, nil
 }
 
 func (s *Storage) Close() error {
@@ -94,14 +45,38 @@ func (s *Storage) Close() error {
 	return s.db.Close()
 }
 
-func (s *Storage) ListKeys() []string {
+func (s *Storage) ListKeys(types ...model.SecretType) []string {
 	result := make([]string, 0)
 	err := s.db.View(func(txn *badger.Txn) error {
-		it := txn.NewIterator(badger.IteratorOptions{Reverse: false, AllVersions: false, Prefix: []byte("secret")})
+		it := txn.NewIterator(badger.IteratorOptions{Reverse: false, AllVersions: false, Prefix: []byte("_secret:")})
 		defer it.Close()
 
 		for it.Rewind(); it.Valid(); it.Next() {
-			result = append(result, fmt.Sprint(it.Item().Key()))
+			if len(types) == 0 {
+				result = append(result, strings.TrimPrefix(string(it.Item().Key()), "_secret:"))
+			}
+			var value []byte
+			err := it.Item().Value(func(val []byte) error {
+				value = val
+				return nil
+			})
+			if err != nil {
+				fmt.Println("ошибка отображения секрета")
+				return nil
+			}
+			buf := bytes.NewReader(value)
+			secret := model.Secret{}
+			err = gob.NewDecoder(buf).Decode(&secret)
+			if err != nil {
+				fmt.Println("ошибка отображения секрета")
+				return nil
+			}
+
+			for _, v := range types {
+				if v == secret.Type {
+					result = append(result, strings.TrimPrefix(string(it.Item().Key()), "_secret:"))
+				}
+			}
 		}
 		return nil
 	})
@@ -113,20 +88,18 @@ func (s *Storage) ListKeys() []string {
 	return result
 }
 
-func (s *Storage) Get(key []byte) []byte {
-	var result []string
+func (s *Storage) Get(m model.Secret) *model.Secret {
+	var result []byte
+
 	err := s.db.View(func(txn *badger.Txn) error {
 		var r *badger.Item
-		r, err := txn.Get(key)
+		r, err := txn.Get([]byte("_secret:" + m.Name))
 		if err != nil {
 			return err
 		}
-		return r.Value(func(val []byte) error {
-			cryp, err = cryptor.NewCryptor(val)
-			if err != nil {
-				return err
-			}
 
+		return r.Value(func(val []byte) error {
+			result = val
 			return nil
 		})
 	})
@@ -135,7 +108,16 @@ func (s *Storage) Get(key []byte) []byte {
 		return nil
 	}
 
-	return result
+	buf := bytes.NewReader(result)
+	secret := model.Secret{}
+	err = gob.NewDecoder(buf).Decode(&secret)
+
+	if err != nil {
+		fmt.Println("ошибка отображения секрета")
+		return nil
+	}
+
+	return &secret
 }
 
 func (s *Storage) Update(m model.Secret) (err error) {
@@ -147,21 +129,24 @@ func (s *Storage) Update(m model.Secret) (err error) {
 		return err
 	}
 
-	var enc []byte
-	enc, err = s.c.Encrypt(buf.Bytes())
+	err = s.db.Update(func(txn *badger.Txn) error {
+		return txn.SetEntry(&badger.Entry{
+			Key:   []byte("_secret:" + m.Name),
+			Value: buf.Bytes(),
+		})
+	})
+
+	return err
+}
+
+func (s *Storage) Remove(m model.Secret) (err error) {
+	err = s.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte("_secret:" + m.Name))
+	})
 
 	if err != nil {
 		return err
 	}
 
-	key := sha256.Sum256([]byte(m.Name))
-
-	err = s.db.Update(func(txn *badger.Txn) error {
-		return txn.SetEntry(&badger.Entry{
-			Key:   key[:],
-			Value: enc,
-		})
-	})
-
-	return err
+	return nil
 }

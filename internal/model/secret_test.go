@@ -23,13 +23,14 @@ labels:
   bla: bla
 name: success-text
 owner: testovich
+type: Текст
 `,
 		secret: &Secret{
 			Name:   "success-text",
 			Owner:  "testovich",
 			Labels: map[string]string{"bla": "bla"},
 			Type:   TextType,
-			data:   []byte("hello"),
+			Data:   []byte("hello"),
 		},
 	},
 	{
@@ -40,23 +41,24 @@ hello
 ---
 name: success-text
 owner: testovich
+type: Текст
 `,
 		secret: &Secret{
 			Name:  "success-text",
 			Owner: "testovich",
 			Type:  TextType,
-			data:  []byte("hello"),
+			Data:  []byte("hello"),
 		},
 	},
 	{
 		name:   "success binary",
 		text:   "это не текстовые данные. Тип - Бинарные данные",
-		result: "---\nэто не текстовые данные. Тип - Бинарные данные\n---\nname: success-text\nowner: testovich\n",
+		result: "---\nэто не текстовые данные. Тип - Бинарные данные\n---\nname: success-text\nowner: testovich\ntype: Бинарные данные\n",
 		secret: &Secret{
 			Name:  "success-text",
 			Owner: "testovich",
 			Type:  BinaryType,
-			data:  []byte("hello"),
+			Data:  []byte("hello"),
 		},
 	},
 }
@@ -68,7 +70,7 @@ func TestSecretRead(t *testing.T) {
 			assert.Equal(t, v.secret.String(), v.result)
 			b := v.secret.Bytes()
 			assert.NotEmpty(t, b)
-			assert.Equal(t, b, v.secret.data)
+			assert.Equal(t, b, v.secret.Data)
 		})
 	}
 }

@@ -17,9 +17,11 @@ var (
 )
 
 type AuthorizeCmd struct {
+	cmd      *Cmd
 	SeverURL string `name:"url" help:"Адрес API сервера"`
 }
 type AuthorizeState struct {
+	cmd   *Cmd
 	words string
 	ready bool
 }
@@ -35,15 +37,15 @@ func (l *AuthorizeCmd) Run(ctx *internal.Context) error {
 
 		switch char {
 		case 'y', 'Y', 'н', 'Н':
-			SaveTermState()
+			l.cmd.SaveTermState()
 
-			defer RestoreTermState()
+			defer l.cmd.RestoreTermState()
 			fmt.Println(" - y\nВведите мнемоническую фразу (12 слов):")
 
 			s := &AuthorizeState{}
 			p := prompt.New(
-				s.executor,
-				s.completer,
+				s.Executor,
+				s.Completer,
 				prompt.OptionShowCompletionAtStart(),
 				prompt.OptionCompletionOnDown(),
 				prompt.OptionPrefix("> "),
@@ -72,7 +74,7 @@ func (l *AuthorizeCmd) Run(ctx *internal.Context) error {
 	}
 }
 
-func (s *AuthorizeState) executor(in string) {
+func (s *AuthorizeState) Executor(in string) {
 	words := strings.Split(strings.TrimSpace(in), " ")
 	if len(words) == 12 {
 		for _, w := range words {
@@ -110,7 +112,7 @@ func (s *AuthorizeState) executor(in string) {
 	if strings.TrimSpace(in) == "y" {
 		path, err := os.UserConfigDir()
 		if err != nil {
-			RestoreTermState()
+			s.cmd.RestoreTermState()
 			log.Err(err)
 			os.Exit(1)
 		}
@@ -120,12 +122,12 @@ func (s *AuthorizeState) executor(in string) {
 			log.Err(err)
 		}
 
-		RestoreTermState()
+		s.cmd.RestoreTermState()
 		os.Exit(0)
 	}
 }
 
-func (s *AuthorizeState) completer(in prompt.Document) []prompt.Suggest {
+func (s *AuthorizeState) Completer(in prompt.Document) []prompt.Suggest {
 	if s.ready {
 		return []prompt.Suggest{
 			{Text: "y", Description: "Применить введённую фразу"},

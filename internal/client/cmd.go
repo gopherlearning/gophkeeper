@@ -12,9 +12,10 @@ import (
 	"golang.org/x/term"
 )
 
-var termState *term.State
+// var termState *term.State
 
 type Cmd struct {
+	termState *term.State
 	// Bla string
 	// Authorize AuthorizeCmd `cmd:"" help:"Авторизоваться с помощью адреса сервера и мнемонической фразы и задать пароль для защиты локальной версии хранилища"`
 }
@@ -27,7 +28,8 @@ func (l *Cmd) Run(ctx *internal.Context) error {
 	err := checkStorage(os.UserConfigDir())
 	if err != nil {
 		if errors.Is(err, ErrLocalStorageNotFound) {
-			return new(AuthorizeCmd).Run(ctx)
+			ac := &AuthorizeCmd{cmd: l}
+			return ac.Run(ctx)
 		}
 
 		return err
@@ -43,34 +45,34 @@ func (l *Cmd) Run(ctx *internal.Context) error {
 		return err
 	}
 
-	db, err := local.NewLocalStorage(fmt.Sprint(key)[10:42], filepath.Join(path, ".gophkeeper"), nil)
+	db, err := local.NewLocalStorage(fmt.Sprint(key)[10:42], filepath.Join(path, ".gophkeeper"))
 	if err != nil {
 		return err
 	}
 
-	cli := &CliCmd{db: db}
+	cli := &CliCmd{db: db, parrent: l}
 
 	return cli.Run(ctx)
 }
 
 // SaveTermState - save terminal state on start.
-func SaveTermState() {
+func (l *Cmd) SaveTermState() {
 	oldState, err := term.GetState(int(os.Stdin.Fd()))
 	if err != nil {
 		return
 	}
 
-	termState = oldState
+	l.termState = oldState
 }
 
 // RestoreTermState - restore terminal state on exit.
-func RestoreTermState() {
+func (l *Cmd) RestoreTermState() {
 	if r := recover(); r != nil {
 		fmt.Println("Recovered in f", r)
 	}
 
-	if termState != nil {
-		err := term.Restore(int(os.Stdin.Fd()), termState)
+	if l.termState != nil {
+		err := term.Restore(int(os.Stdin.Fd()), l.termState)
 		if err != nil {
 			fmt.Println("Recovered in f.Error: ", err)
 		}

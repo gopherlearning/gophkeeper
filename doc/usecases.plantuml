@@ -4,21 +4,21 @@ actor Пользователь as u
 usecase UC1 #palegreen;line:green as "получает информацию 
 о версии и дате сборки бинарного 
 файла клиента" 
-usecase UC2  as "генерирует мнемоническую
+usecase UC2 #palegreen;line:green as "генерирует мнемоническую
 фразу"
-usecase UC17  as "вводит мнемоническую
+usecase UC17  #palegreen;line:green as "вводит мнемоническую
 фразу"
 usecase UC11 as "проходит 
 процедуру аутентификации"
-usecase UC3  as "добавляет в клиент 
+usecase UC3 #palegreen;line:green as "добавляет в клиент 
 пары логин/пароль"
-usecase UC4  as "добавляет в клиент 
+usecase UC4  #palegreen;line:green as "добавляет в клиент 
 произвольные текстовые 
 данные"
 usecase UC5  as "добавляет в клиент 
 произвольные бинарные 
 данные"
-usecase UC6  as "добавляет в клиент 
+usecase UC6 #palegreen;line:green as "добавляет в клиент 
 данные банковских 
 карт"
 usecase UC7  as "добавляет в 
@@ -30,7 +30,7 @@ usecase UC9  as "добавляет к
 данным теги"
 usecase UC10 as "синхронизирует 
 данные с сервером"
-usecase UC12 as "запрашивает 
+usecase UC12 #palegreen;line:green as "запрашивает 
 данные"
 usecase UC13 as "копирует 
 пароль"
