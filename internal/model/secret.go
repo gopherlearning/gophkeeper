@@ -77,4 +77,3 @@ func (s *Secret) Set(data []byte) {
 func (a aliasSecret) Text() string {
 	return a.S.Text()
 }
-
