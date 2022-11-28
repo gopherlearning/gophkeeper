@@ -9,10 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewStorage(t *testing.T) {
-	t.Parallel()
-
-	var tests = []struct {
+func testNewStorageData(t *testing.T) []struct {
+	err  error
+	name string
+	key  string
+	path string
+} {
+	tests := []struct {
 		err  error
 		name string
 		key  string
@@ -44,6 +47,14 @@ func TestNewStorage(t *testing.T) {
 		},
 	}
 
+	return tests
+}
+
+func TestNewStorage(t *testing.T) {
+	t.Parallel()
+
+	var tests = testNewStorageData(t)
+
 	for _, v := range tests {
 		t.Run(v.name, func(t *testing.T) {
 			s, err := NewLocalStorage(v.key, v.path, "")
@@ -68,7 +79,6 @@ func TestNewStorage(t *testing.T) {
 			assert.Nil(t, s.Get(model.Secret{Name: "test"}))
 			assert.NotEmpty(t, s.ListKeys())
 			assert.NotEmpty(t, s.ListKeys(model.PasswordType))
-
 			assert.NoError(t, s.Close())
 			assert.Nil(t, s.ListKeys())
 			assert.Error(t, s.Remove(model.Secret{Name: "test"}))

@@ -79,49 +79,40 @@ func NewLocalStorage(secret, path, serverURL string) (*Storage, error) {
 	if len(store.serverURL.Load().(string)) != 0 {
 		store.connectToServer(ctx)
 
-		var updated uint64
-
-		err = store.db.View(func(txn *badger.Txn) error {
-			var i *badger.Item
-			i, err = txn.Get([]byte("lastUpdated"))
-			if err != nil {
-				return err
-			}
-
-			return i.Value(func(val []byte) error {
-				updated, err = strconv.ParseUint(string(val), 10, 64)
-				if err != nil {
-					return err
-				}
-				return nil
-			})
-		})
+		updated, err := store.getUpdated()
 		if err != nil {
-			log.Debug().Err(err)
+			return nil, err
 		}
 
 		go store.getUpdatesFromServer(ctx, updated)
 	}
 
-	// }
-	// if len(serverURL) != 0 {
-	// go func() {
-	// 	store.remoteStatus.Store("❌ >")
-
-	// 	for {
-	// 		time.Sleep(time.Second * 2)
-	// 		v := store.remoteStatus.Load().(string)
-	// 		switch v {
-	// 		case "✅ >":
-	// 			store.remoteStatus.Store("❌ >")
-	// 		case "❌ >":
-	// 			store.remoteStatus.Store("✅ >")
-	// 		}
-	// 	}
-	// }()
-	// }
-
 	return store, nil
+}
+
+func (s *Storage) getUpdated() (uint64, error) {
+	var updated uint64
+
+	err := s.db.View(func(txn *badger.Txn) error {
+		var i *badger.Item
+		i, err := txn.Get([]byte("lastUpdated"))
+		if err != nil {
+			return err
+		}
+
+		return i.Value(func(val []byte) error {
+			updated, err = strconv.ParseUint(string(val), 10, 64)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return updated, nil
 }
 
 func (s *Storage) getServerURL() error {
@@ -146,7 +137,6 @@ func (s *Storage) getUpdatesFromServer(ctx context.Context, updated uint64) {
 		for range ticker.C {
 			log.Debug().Msg("сервер недоступен")
 			s.remoteStatus.Store("❌ >")
-
 		}
 	}()
 

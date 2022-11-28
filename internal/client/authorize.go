@@ -125,26 +125,6 @@ func (s *AuthorizeState) Executor(in string) {
 
 	if strings.TrimSpace(in) == "y" {
 		return
-		// path, err := os.UserConfigDir()
-		// if err != nil {
-		// 	s.cmd.RestoreTermState()
-		// 	log.Err(err)
-		// 	os.Exit(1)
-		// }
-
-		// var serverURL string
-
-		// serv := &ServerURL{}
-
-		// serv.Run(&internal.Context{})
-
-		// err = initStorage(s.words, path, serverURL)
-		// if err != nil {
-		// 	log.Err(err)
-		// }
-
-		// s.cmd.RestoreTermState()
-		// os.Exit(0)
 	}
 }
 
