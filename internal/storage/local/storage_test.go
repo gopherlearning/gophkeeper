@@ -52,10 +52,13 @@ func TestNewStorage(t *testing.T) {
 				assert.Nil(t, s)
 				return
 			}
-
-			assert.Empty(t, s.Status())
+			status, ok := s.Status()()
+			assert.Empty(t, status)
+			assert.Equal(t, ok, false)
 			s.remoteStatus.Store("123")
-			assert.Equal(t, "123", s.Status())
+			status, ok = s.Status()()
+			assert.Equal(t, "123", status)
+			assert.Equal(t, ok, true)
 			require.NoError(t, err)
 			assert.NotNil(t, s)
 			assert.NoError(t, s.Update(model.Secret{Name: "test", Data: []byte("secret")}))

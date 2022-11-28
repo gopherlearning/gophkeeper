@@ -212,7 +212,11 @@ func (s *Storage) Close() error {
 
 func (s *Storage) Status() func() (string, bool) {
 	return func() (string, bool) {
-		prefix, _ := s.remoteStatus.Load().(string)
+		prefix, ok := s.remoteStatus.Load().(string)
+		if !ok {
+			return "", false
+		}
+
 		return prefix, true
 	}
 }
@@ -332,7 +336,7 @@ func (s *Storage) Remove(m model.Secret) (err error) {
 		return err
 	}
 
-	if s.serverURL.Load() != nil {
+	if s.serverURL.Load() != nil && s.remote != nil {
 		_, err = s.remote.Update(context.Background(), &proto.Secret{
 			Name:  m.Name,
 			Owner: s.owner,
