@@ -17,3 +17,5 @@ vendor/
 *.drawio.dtmp
 ___kube
 profile.cov
+.gopherstorage
+gophkeeper

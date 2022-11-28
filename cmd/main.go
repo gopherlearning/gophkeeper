@@ -14,7 +14,7 @@ var (
 
 func init() {
 	log.Logger = zerolog.
-		New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "15:04:05"}).
+		New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-01-02 15:04:05"}).
 		With().Timestamp().Logger()
 }
 

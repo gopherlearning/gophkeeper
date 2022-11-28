@@ -3,13 +3,22 @@ package local
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/gob"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/gopherlearning/gophkeeper/internal/model"
+	proto "github.com/gopherlearning/gophkeeper/pkg/proto"
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -17,11 +26,15 @@ var (
 )
 
 type Storage struct {
-	cancelFunc context.CancelFunc
-	db         *badger.DB
+	cancelFunc   context.CancelFunc
+	db           *badger.DB
+	remoteStatus atomic.Value
+	remote       proto.PublicClient
+	serverURL    atomic.Value
+	owner        string
 }
 
-func NewLocalStorage(secret, path string) (*Storage, error) {
+func NewLocalStorage(secret, path, serverURL string) (*Storage, error) {
 	db, err := badger.Open(badger.DefaultOptions(path).
 		WithEncryptionKey([]byte(secret)).
 		WithIndexCacheSize(20 * 1024 * 1024).
@@ -37,12 +50,171 @@ func NewLocalStorage(secret, path string) (*Storage, error) {
 		db.Close()
 	}()
 
-	return &Storage{db: db, cancelFunc: cancel}, nil
+	if len(serverURL) != 0 {
+		err = db.Update(func(txn *badger.Txn) error {
+			return txn.SetEntry(&badger.Entry{Key: []byte("serverURL"), Value: []byte(serverURL)})
+		})
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+	}
+
+	fmt.Println(hex.EncodeToString(sha256.New().Sum([]byte(secret))))
+
+	store := &Storage{db: db, cancelFunc: cancel, owner: hex.EncodeToString(sha256.New().Sum([]byte(secret)))}
+	err = store.getServerURL()
+
+	if err != nil && err != badger.ErrKeyNotFound {
+		cancel()
+		return nil, err
+	}
+
+	if store.serverURL.Load() == nil {
+		store.serverURL.Store("")
+	}
+
+	log.Debug().Msg(store.serverURL.Load().(string))
+
+	if len(store.serverURL.Load().(string)) != 0 {
+		store.connectToServer(ctx)
+
+		var updated uint64
+
+		err = store.db.View(func(txn *badger.Txn) error {
+			var i *badger.Item
+			i, err = txn.Get([]byte("lastUpdated"))
+			if err != nil {
+				return err
+			}
+
+			return i.Value(func(val []byte) error {
+				updated, err = strconv.ParseUint(string(val), 10, 64)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+		})
+		if err != nil {
+			log.Debug().Err(err)
+		}
+
+		go store.getUpdatesFromServer(ctx, updated)
+	}
+
+	// }
+	// if len(serverURL) != 0 {
+	// go func() {
+	// 	store.remoteStatus.Store("❌ >")
+
+	// 	for {
+	// 		time.Sleep(time.Second * 2)
+	// 		v := store.remoteStatus.Load().(string)
+	// 		switch v {
+	// 		case "✅ >":
+	// 			store.remoteStatus.Store("❌ >")
+	// 		case "❌ >":
+	// 			store.remoteStatus.Store("✅ >")
+	// 		}
+	// 	}
+	// }()
+	// }
+
+	return store, nil
+}
+
+func (s *Storage) getServerURL() error {
+	return s.db.View(func(txn *badger.Txn) error {
+		v, err := txn.Get([]byte("serverURL"))
+		if err != nil {
+			return err
+		}
+		return v.Value(func(val []byte) error {
+			s.serverURL.Store(string(val))
+			return nil
+		})
+	})
+}
+
+func (s *Storage) getUpdatesFromServer(ctx context.Context, updated uint64) {
+	s.remoteStatus.Store("❌ >")
+
+	ticker := time.NewTicker(6 * time.Second)
+
+	go func() {
+		for range ticker.C {
+			log.Debug().Msg("сервер недоступен")
+			s.remoteStatus.Store("❌ >")
+
+		}
+	}()
+
+	stream, err := s.remote.Updates(ctx, &proto.Request{Owner: s.owner, Updated: updated})
+
+	for err == nil {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			secret, err := stream.Recv()
+			if err != nil {
+				if err != io.EOF {
+					log.Err(err)
+					return
+				}
+
+				log.Err(err)
+				s.remoteStatus.Store("❌ >")
+
+				continue
+			}
+
+			if secret.Name == "__ping" {
+				log.Debug().Msg("ping")
+				ticker.Reset(6 * time.Second)
+
+				if s.remoteStatus.Load().(string) != "✅ >" {
+					s.remoteStatus.Store("✅ >")
+				}
+			}
+
+			err = s.db.Update(func(txn *badger.Txn) error {
+				return txn.Set([]byte(secret.Name), secret.GetData())
+			})
+
+			if err != nil {
+				log.Err(err)
+			}
+		}
+	}
+}
+
+func (s *Storage) connectToServer(ctx context.Context) {
+	var (
+		con grpc.ClientConnInterface
+		err error
+	)
+
+	con, err = grpc.DialContext(ctx, strings.TrimPrefix(s.serverURL.Load().(string), "grpc://"), grpc.WithInsecure())
+	if err != nil {
+		log.Debug().Err(err)
+		return
+	}
+
+	s.remote = proto.NewPublicClient(con)
 }
 
 func (s *Storage) Close() error {
 	s.cancelFunc()
 	return s.db.Close()
+}
+
+func (s *Storage) Status() func() (string, bool) {
+	return func() (string, bool) {
+		prefix, _ := s.remoteStatus.Load().(string)
+		return prefix, true
+	}
 }
 
 func (s *Storage) ListKeys(types ...model.SecretType) []string {
@@ -136,6 +308,18 @@ func (s *Storage) Update(m model.Secret) (err error) {
 		})
 	})
 
+	if s.remote != nil {
+		_, err = s.remote.Update(context.Background(), &proto.Secret{
+			Data:    m.Data,
+			Name:    m.Name,
+			Owner:   s.owner,
+			Type:    proto.SecretType(m.Type),
+			Updated: uint64(time.Now().Unix()),
+		})
+
+		return err
+	}
+
 	return err
 }
 
@@ -145,6 +329,15 @@ func (s *Storage) Remove(m model.Secret) (err error) {
 	})
 
 	if err != nil {
+		return err
+	}
+
+	if s.serverURL.Load() != nil {
+		_, err = s.remote.Update(context.Background(), &proto.Secret{
+			Name:  m.Name,
+			Owner: s.owner,
+		})
+
 		return err
 	}
 

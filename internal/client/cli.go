@@ -16,10 +16,10 @@ import (
 )
 
 type CliCmd struct {
-	temp    *model.Secret
-	parrent *Cmd
-	db      Repository
-	exist   bool
+	temp  *model.Secret
+	cmd   *Cmd
+	db    Repository
+	exist bool
 }
 
 type CliState struct {
@@ -40,17 +40,18 @@ var (
 
 func (s *CliCmd) Run(ctx *internal.Context) error {
 	log.Debug().
-		Msg("я консольная часть менеджера паролей GophKeeper")
-	s.parrent.SaveTermState()
+		Msg("хранилиже подгружено")
+	s.cmd.SaveTermState()
 
-	defer s.parrent.RestoreTermState()
+	defer s.cmd.RestoreTermState()
 
 	p := prompt.New(
 		s.executor,
 		s.completer,
 		prompt.OptionShowCompletionAtStart(),
 		prompt.OptionCompletionOnDown(),
-		prompt.OptionPrefix("> "),
+		prompt.OptionLivePrefix(s.db.Status()),
+		prompt.OptionPrefix("❌ >"),
 	)
 	p.Run()
 

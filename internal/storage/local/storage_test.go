@@ -46,12 +46,16 @@ func TestNewStorage(t *testing.T) {
 
 	for _, v := range tests {
 		t.Run(v.name, func(t *testing.T) {
-			s, err := NewLocalStorage(v.key, v.path)
+			s, err := NewLocalStorage(v.key, v.path, "")
 			if v.err != nil {
 				require.ErrorContains(t, err, v.err.Error())
 				assert.Nil(t, s)
 				return
 			}
+
+			assert.Empty(t, s.Status())
+			s.remoteStatus.Store("123")
+			assert.Equal(t, "123", s.Status())
 			require.NoError(t, err)
 			assert.NotNil(t, s)
 			assert.NoError(t, s.Update(model.Secret{Name: "test", Data: []byte("secret")}))

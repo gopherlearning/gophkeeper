@@ -23,15 +23,32 @@ type Cmd struct {
 // Run клиентская часть менеджера паролей GophKeeper.
 func (l *Cmd) Run(ctx *internal.Context) error {
 	log.Debug().
-		Msg("я клтентская часть менеджера паролей GophKeeper")
+		Msg("я клиентская часть менеджера паролей GophKeeper")
+	log.Debug().
+		Msg("проверка хранилища")
 
-	err := checkStorage(os.UserConfigDir())
-	if err != nil {
-		if errors.Is(err, ErrLocalStorageNotFound) {
-			ac := &AuthorizeCmd{cmd: l}
-			return ac.Run(ctx)
+	var serverURL string
+
+	err := func(err error) error {
+		if err != nil {
+			if errors.Is(err, ErrLocalStorageNotFound) {
+				ac := &AuthorizeCmd{cmd: l}
+				if err = ac.Run(ctx); err != nil {
+					return err
+				}
+
+				serverURL = ac.SeverURL
+
+				return nil
+			}
+
+			return err
 		}
 
+		return nil
+	}(checkStorage(os.UserConfigDir()))
+
+	if err != nil {
 		return err
 	}
 
@@ -45,12 +62,12 @@ func (l *Cmd) Run(ctx *internal.Context) error {
 		return err
 	}
 
-	db, err := local.NewLocalStorage(fmt.Sprint(key)[10:42], filepath.Join(path, ".gophkeeper"))
+	db, err := local.NewLocalStorage(fmt.Sprint(key)[10:42], filepath.Join(path, ".gophkeeper"), serverURL)
 	if err != nil {
 		return err
 	}
 
-	cli := &CliCmd{db: db, parrent: l}
+	cli := &CliCmd{db: db, cmd: l}
 
 	return cli.Run(ctx)
 }
@@ -68,13 +85,13 @@ func (l *Cmd) SaveTermState() {
 // RestoreTermState - restore terminal state on exit.
 func (l *Cmd) RestoreTermState() {
 	if r := recover(); r != nil {
-		fmt.Println("Recovered in f", r)
+		log.Error().Msgf("Recovered in f %v", r)
 	}
 
 	if l.termState != nil {
 		err := term.Restore(int(os.Stdin.Fd()), l.termState)
 		if err != nil {
-			fmt.Println("Recovered in f.Error: ", err)
+			log.Error().Msgf("Recovered in f.Error: %v", err)
 		}
 	}
 }

@@ -38,21 +38,22 @@ func (l *AuthorizeCmd) Run(ctx *internal.Context) error {
 		switch char {
 		case 'y', 'Y', 'н', 'Н':
 			l.cmd.SaveTermState()
-
 			defer l.cmd.RestoreTermState()
 			fmt.Println(" - y\nВведите мнемоническую фразу (12 слов):")
 
-			s := &AuthorizeState{}
+			s := &AuthorizeState{cmd: l.cmd}
 			p := prompt.New(
 				s.Executor,
 				s.Completer,
 				prompt.OptionShowCompletionAtStart(),
 				prompt.OptionCompletionOnDown(),
+				prompt.OptionSetExitCheckerOnInput(func(in string, breakline bool) bool { return in == "y" }),
 				prompt.OptionPrefix("> "),
 			)
 			p.Run()
+			log.Debug().Msg("ввод мнемонической фразы закончен")
 
-			return nil
+			return l.initStorage(ctx, s.words)
 		case 'n', 'N', 'т', 'Т':
 			mnemonic, err := generateMnemonic()
 			if err != nil {
@@ -61,17 +62,30 @@ func (l *AuthorizeCmd) Run(ctx *internal.Context) error {
 
 			fmt.Printf("\nСохраните данную фразу в надёжном месте:\n%s\n", mnemonic)
 
-			path, err := os.UserConfigDir()
-			if err != nil {
-				return err
-			}
-
-			return initStorage(mnemonic, path)
+			return l.initStorage(ctx, mnemonic)
 		case 'e', 'E', 'q', 'Q', 'й', 'Й', 'у', 'У':
 			fmt.Println()
 			return nil
 		}
 	}
+}
+
+func (l *AuthorizeCmd) initStorage(ctx *internal.Context, mnemonic string) error {
+	serv := ServerURL{cmd: l.cmd}
+	err := serv.Run(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	l.SeverURL = serv.URL
+	path, err := os.UserConfigDir()
+
+	if err != nil {
+		return err
+	}
+
+	return initStorage(mnemonic, path, serv.URL)
 }
 
 func (s *AuthorizeState) Executor(in string) {
@@ -110,20 +124,27 @@ func (s *AuthorizeState) Executor(in string) {
 	}
 
 	if strings.TrimSpace(in) == "y" {
-		path, err := os.UserConfigDir()
-		if err != nil {
-			s.cmd.RestoreTermState()
-			log.Err(err)
-			os.Exit(1)
-		}
+		return
+		// path, err := os.UserConfigDir()
+		// if err != nil {
+		// 	s.cmd.RestoreTermState()
+		// 	log.Err(err)
+		// 	os.Exit(1)
+		// }
 
-		err = initStorage(s.words, path)
-		if err != nil {
-			log.Err(err)
-		}
+		// var serverURL string
 
-		s.cmd.RestoreTermState()
-		os.Exit(0)
+		// serv := &ServerURL{}
+
+		// serv.Run(&internal.Context{})
+
+		// err = initStorage(s.words, path, serverURL)
+		// if err != nil {
+		// 	log.Err(err)
+		// }
+
+		// s.cmd.RestoreTermState()
+		// os.Exit(0)
 	}
 }
 
