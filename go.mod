@@ -9,10 +9,13 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/dgraph-io/badger/v3 v3.2103.3
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
+	github.com/google/uuid v1.3.0
 	github.com/gopasspw/gopass v1.14.10
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/term v0.2.0
+	google.golang.org/grpc v1.32.0
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -43,7 +46,8 @@ require (
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	golang.org/x/text v0.4.0 // indirect
+	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -9,10 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewStorage(t *testing.T) {
-	t.Parallel()
-
-	var tests = []struct {
+func testNewStorageData(t *testing.T) []struct {
+	err  error
+	name string
+	key  string
+	path string
+} {
+	tests := []struct {
 		err  error
 		name string
 		key  string
@@ -44,14 +47,29 @@ func TestNewStorage(t *testing.T) {
 		},
 	}
 
+	return tests
+}
+
+func TestNewStorage(t *testing.T) {
+	t.Parallel()
+
+	var tests = testNewStorageData(t)
+
 	for _, v := range tests {
 		t.Run(v.name, func(t *testing.T) {
-			s, err := NewLocalStorage(v.key, v.path)
+			s, err := NewLocalStorage(v.key, v.path, "")
 			if v.err != nil {
 				require.ErrorContains(t, err, v.err.Error())
 				assert.Nil(t, s)
 				return
 			}
+			status, ok := s.Status()()
+			assert.Empty(t, status)
+			assert.Equal(t, ok, false)
+			s.remoteStatus.Store("123")
+			status, ok = s.Status()()
+			assert.Equal(t, "123", status)
+			assert.Equal(t, ok, true)
 			require.NoError(t, err)
 			assert.NotNil(t, s)
 			assert.NoError(t, s.Update(model.Secret{Name: "test", Data: []byte("secret")}))
@@ -61,7 +79,6 @@ func TestNewStorage(t *testing.T) {
 			assert.Nil(t, s.Get(model.Secret{Name: "test"}))
 			assert.NotEmpty(t, s.ListKeys())
 			assert.NotEmpty(t, s.ListKeys(model.PasswordType))
-
 			assert.NoError(t, s.Close())
 			assert.Nil(t, s.ListKeys())
 			assert.Error(t, s.Remove(model.Secret{Name: "test"}))

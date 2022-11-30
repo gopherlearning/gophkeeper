@@ -1,4 +1,4 @@
-package client
+package server
 
 import "github.com/gopherlearning/gophkeeper/internal/model"
 
@@ -7,5 +7,4 @@ type Repository interface {
 	ListKeys(...model.SecretType) []string
 	Get(m model.Secret) *model.Secret
 	Remove(m model.Secret) error
-	Status() func() (string, bool)
 }

@@ -24,11 +24,12 @@ cvv:
 // Secret является минимальной единицей хранения, должен содержать Owner, Name
 // может содержать Labels.
 type Secret struct {
-	Name   string
-	Owner  string
-	Labels map[string]string
-	Data   []byte
-	Type   SecretType
+	Name    string
+	Owner   string
+	Labels  map[string]string
+	Data    []byte
+	Type    SecretType
+	Updated uint64
 }
 
 type aliasSecret struct {

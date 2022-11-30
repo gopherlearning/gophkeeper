@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/gopherlearning/gophkeeper/internal/storage/local"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -34,13 +35,14 @@ func checkStorage(path string, err error) error {
 	return nil
 }
 
-func initStorage(mnemonic, path string) error {
+func initStorage(mnemonic, path, serverURL string) error {
 	fmt.Println("Инициализация ")
 
 	path = filepath.Join(path, ".gophkeeper")
-	s := sha256.Sum256([]byte(fmt.Sprint(path, `%%%%`, mnemonic)))
+	s := sha256.Sum256([]byte(fmt.Sprint(`%%%%`, mnemonic)))
 
-	db, err := local.NewLocalStorage(fmt.Sprint(s)[10:42], path)
+	log.Debug().Msg(fmt.Sprint(s)[10:42])
+	db, err := local.NewLocalStorage(fmt.Sprint(s)[10:42], path, serverURL)
 
 	if err != nil {
 		return err
@@ -52,7 +54,7 @@ func initStorage(mnemonic, path string) error {
 		return err
 	}
 
-	fmt.Println("Хранилище менеджера паролей создано. Для дальнейшей работы запустите утилиту снова")
+	fmt.Println("Хранилище менеджера паролей создано.")
 
 	return nil
 }
